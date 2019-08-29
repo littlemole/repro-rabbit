@@ -1,0 +1,9 @@
+prefix=/usr/local
+includedir=${prefix}/include
+libdir=${prefix}/lib
+
+Name: repro-rabbit
+Description: reactive c++ rabbitmq client wrapper with promises
+Version: 0.0.1
+Cflags: -I${includedir}
+Libs: -L${libdir} -lreprorabbit -lpriocpp -lpthread -lamqpcpp
