@@ -1,27 +1,14 @@
 #include "reprorabbit/rabbit.h"
 
-//#include <memory>
-//#include <list>
-//#include <utility>
-//#include <iostream>
-//#include <string>
-//#include <exception>
-//#include <functional>
-//#include "reprocpp/after.h"
-//#include "test.h"
-//#include "promise/asio/loop.h"
-//#include "priocpp/api.h"
-//#include "priocpp/ResourcePool.h"
 #include "priocpp/impl/event.h"
 #include "priocpp/task.h"
-//#include <signal.h>
-
-//#include <event2/event.h>
 #include <amqpcpp.h>
 #include <amqpcpp/libevent.h>
 
 namespace reprorabbit 
 {
+
+////////////////////////////////////////////////////////////////////
 
 class RabbitChannel
 {
@@ -31,6 +18,8 @@ public:
   std::shared_ptr<AMQP::TcpChannel> channel;
 
 };
+
+////////////////////////////////////////////////////////////////////
 
 AMQP::LibEventHandler* RabbitLocator::handler()
 {
@@ -77,6 +66,9 @@ void RabbitLocator::free(RabbitChannel* rc)
     }
     delete rc;
 }
+
+
+////////////////////////////////////////////////////////////////////
 
 
 RabbitPool::RabbitPool(const std::string& url, int capacity)
@@ -147,6 +139,7 @@ repro::Future<RabbitPool::ResourcePtr> RabbitPool::get()
 	return p.future();
 }
 
+////////////////////////////////////////////////////////////////////
 
 
 RabbitTransaction::RabbitTransaction(RabbitPool::ResourcePtr rabbit)
@@ -182,6 +175,7 @@ Future<> RabbitTransaction::commit()
 }
 
 
+////////////////////////////////////////////////////////////////////
 
 void RabbitMsg::ack()
 {
@@ -200,6 +194,7 @@ std::string RabbitMsg::body()
     return std::string(message.body(),message.bodySize());
 }
 
+////////////////////////////////////////////////////////////////////
 
 
 RabbitListener::RabbitListener(std::shared_ptr<RabbitPool> pool)
