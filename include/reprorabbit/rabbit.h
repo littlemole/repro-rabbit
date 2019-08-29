@@ -15,7 +15,12 @@ namespace AMQP
     class Message;
     class TcpConnection;
     class TcpChannel;
+#ifdef PROMISE_USE_LIBEVENT    
     class LibEventHandler;
+#endif
+#ifdef PROMISE_USE_BOOST_ASIO
+    class LibBoostAsioHandler;
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -37,7 +42,12 @@ struct RabbitLocator
 	static repro::Future<type*> retrieve(const std::string& url);
 	static void free( type* t);
 
+#ifdef PROMISE_USE_LIBEVENT  
     static AMQP::LibEventHandler* handler();
+#endif
+#ifdef PROMISE_USE_BOOST_ASIO
+    static AMQP::LibBoostAsioHandler* handler();
+#endif
 };
 
 

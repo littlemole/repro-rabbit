@@ -100,6 +100,18 @@ rmi : ## remove existing docker image, if any
 	-docker rmi $(IMAGE)
 
 
+up : update-dockerfile
+	RABBIT_HOST=rabbit CXX=$(CXX) docker-compose build test
+	RABBIT_HOST=rabbit  CXX=$(CXX) docker-compose run test
+	make down
+
+down:
+	docker-compose down
+
+rabbit : update-dockerfile
+	docker-compose up -d rabbit
+
+
 # self documenting makefile, see 
 # https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 

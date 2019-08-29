@@ -20,7 +20,7 @@ PROMISE_3DPARTY = $(LIBEVENT) $(DEFAULT_LIBS) -lamqpcpp -ldl
 
 ifeq ($(BACKEND),boost_asio)
         PROMISE_IMPL = -DPROMISE_USE_BOOST_ASIO
-        PROMISE_3DPARTY = -lboost_system $(DEFAULT_LIBS)
+        PROMISE_3DPARTY = -lboost_system $(DEFAULT_LIBS) -lamqpcpp -ldl 
 endif
 
 #final cpp options

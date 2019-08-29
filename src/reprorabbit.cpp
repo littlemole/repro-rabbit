@@ -1,9 +1,16 @@
 #include "reprorabbit/rabbit.h"
 
-#include "priocpp/impl/event.h"
 #include "priocpp/task.h"
 #include <amqpcpp.h>
+
+#ifdef PROMISE_USE_LIBEVENT  
+#include "priocpp/impl/event.h"
 #include <amqpcpp/libevent.h>
+#endif
+#ifdef PROMISE_USE_BOOST_ASIO
+#include "priocpp/impl/asio.h"
+#include <amqpcpp/libboostasio.h>
+#endif
 
 namespace reprorabbit 
 {
@@ -21,11 +28,21 @@ public:
 
 ////////////////////////////////////////////////////////////////////
 
+#ifdef PROMISE_USE_LIBEVENT    
 AMQP::LibEventHandler* RabbitLocator::handler()
 {
   static AMQP::LibEventHandler theHandler(eventLoop().base());
   return &theHandler;
 }
+#endif
+#ifdef PROMISE_USE_BOOST_ASIO
+AMQP::LibBoostAsioHandler* RabbitLocator::handler()
+{
+  static AMQP::LibBoostAsioHandler theHandler(asioLoop().io());
+  return &theHandler;
+}
+#endif
+
 
 repro::Future<RabbitChannel*> RabbitLocator::retrieve(const std::string& u)
 {
@@ -35,7 +52,7 @@ repro::Future<RabbitChannel*> RabbitLocator::retrieve(const std::string& u)
 
   std::string url = u;
   
-  AMQP::LibEventHandler* h = handler();
+  auto h = handler();
 
   task([url,h]() 
   {

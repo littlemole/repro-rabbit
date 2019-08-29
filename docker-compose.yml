@@ -1,0 +1,20 @@
+version: '2'
+services:
+  rabbit:
+    image: rabbitmq:3.8-rc-management
+    ports:
+     - "5672:5672"
+     - "15672:15672"
+  test:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+      args:
+        CXX: ${CXX}
+        BACKEND: ${BACKEND}
+        BUILDCHAIN: ${BUILDCHAIN}
+        RABBIT_HOST: "rabbit"
+    ports:
+     - "9876:9876"
+    depends_on:
+      - rabbit
