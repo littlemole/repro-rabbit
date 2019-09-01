@@ -49,38 +49,89 @@ TEST_F(BasicTest, SimpleRabbit)
 
     auto pool = std::make_shared<RabbitPool>(url);
 
-    nextTick([&pool](){
+    RabbitListener listener(pool);
 
-      pool->publish("","test","msg number one")
-      .then([]()
-      {
-          std::cout << "Published" << std::endl;
-      });
+    nextTick([&pool,&listener]()
+    {
+      Exchange exchange("test-exchange");
 
-      pool->publish("","test","msg number two")
-      .then([]()
+      exchange
+      .bind("","test-key")
+      .create(*pool)
+      .then([&pool]()
       {
-          std::cout << "Published" << std::endl;
+        Queue queue("test");
+        
+        return queue
+        .bind("test-exchange","test-key")
+        .create(*pool);
       })
-      .otherwise([](const repro::Ex& ex)
+      .then([&pool,&listener]()
       {
-        std::cout << "failed" << std::endl;
-      });
+        listener.subscribe("test")
+        .then([](RabbitMsg msg )
+        {
+              std::cout << "message delivered" << std::endl;
+              std::cout << msg.body() << std::endl;
+              msg.ack();
+
+              static int i = 0;
+              i++;
+
+              if(i>2)
+              {
+                timeout([]()
+                {
+                    theLoop().exit();
+                },0,50);
+              }
+        });
+
+        pool->publish("test-exchange","test-key","msg number one")
+        .then([]()
+        {
+            std::cout << "Published" << std::endl;
+        });
+
+        pool->publish("test-exchange","test-key","msg number two")
+        .then([]()
+        {
+            std::cout << "Published" << std::endl;
+        })
+        .otherwise([](const repro::Ex& ex)
+        {
+          std::cout << "failed" << std::endl;
+        });
 
 
-      pool->tx()
-      .then([](RabbitTransaction tx)
-      {
-         tx.publish("","test","msg number three");
-         return tx.commit();
-      })      
-      .then([]()
-      {
-          std::cout << "Published" << std::endl;
+        pool->tx()
+        .then([](RabbitTransaction tx)
+        {
+          tx.publish("test-exchange","test-key","msg number three");
+          return tx.commit();
+        })      
+        .then([]()
+        {
+            std::cout << "Published" << std::endl;
+        });
       });
     });
 
-    RabbitListener listener(pool);
+    theLoop().run();
+  }
+
+  MOL_TEST_PRINT_CNTS();
+
+}
+
+#ifdef _RESUMABLE_FUNCTIONS_SUPPORTED
+
+repro::Future<> coro_test(std::shared_ptr<RabbitPool> pool, RabbitListener& listener)
+{
+    Queue queue("test");
+
+    co_await queue.create(*pool);
+
     listener.subscribe("test")
     .then([](RabbitMsg msg )
     {
@@ -100,17 +151,6 @@ TEST_F(BasicTest, SimpleRabbit)
           }
     });
 
-    theLoop().run();
-  }
-
-  MOL_TEST_PRINT_CNTS();
-
-}
-
-#ifdef _RESUMABLE_FUNCTIONS_SUPPORTED
-
-repro::Future<> coro_test(std::shared_ptr<RabbitPool> pool)
-{
     co_await pool->publish("","test","msg number one");
 
     std::cout << "Published" << std::endl;
@@ -155,31 +195,14 @@ TEST_F(BasicTest, CoroTest)
 
     auto pool = std::make_shared<RabbitPool>(url);
 
-    nextTick([&pool](){
+    RabbitListener listener(pool);
 
-        coro_test(pool)
+    nextTick([&pool,&listener](){
+
+        coro_test(pool,listener)
         .then([](){});
     });
 
-    RabbitListener listener(pool);
-    listener.subscribe("test")
-    .then([](RabbitMsg msg )
-    {
-          std::cout << "message delivered" << std::endl;
-          std::cout << msg.body() << std::endl;
-          msg.ack();
-
-          static int i = 0;
-          i++;
-
-          if(i>2)
-          {
-            timeout([]()
-            {
-                theLoop().exit();
-            },0,50);
-          }
-    });
 
     theLoop().run();
   }

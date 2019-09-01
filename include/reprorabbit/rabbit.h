@@ -3,7 +3,7 @@
 
 #include "priocpp/api.h"
 #include "priocpp/ResourcePool.h"
-
+#include <amqpcpp/exchangetype.h>
 
 using namespace repro;
 using namespace prio;
@@ -12,6 +12,8 @@ using namespace prio;
 
 namespace AMQP 
 {
+    enum ExchangeType;
+    class Table;
     class Message;
     class TcpConnection;
     class TcpChannel;
@@ -62,6 +64,8 @@ public:
     RabbitTransaction& publish( std::string exchange, std::string key, std::string msg);
 
     Future<> commit();
+
+    Future<> rollback();
 
 private:
 
@@ -129,6 +133,60 @@ private:
   Promise<RabbitMsg> p_;
   std::shared_ptr<RabbitPool> pool_;
 };
+
+
+class Exchange
+{
+public:
+
+    Exchange(const std::string& name);
+        
+    Exchange& type( AMQP::ExchangeType& type);
+    Exchange& flags(int type);                
+    Exchange& arguments( AMQP::Table& arguments);
+
+    Exchange& bind( const std::string& exchange, const std::string& routing_key, AMQP::Table& arguments);
+    Exchange& bind( const std::string& exchange, const std::string& routing_key);
+
+    repro::Future<> create (RabbitPool& rabbit);
+
+
+private:
+    std::string name_;
+    AMQP::ExchangeType type_;
+    int flags_;
+    AMQP::Table& arguments_;
+
+    std::string exchange_;
+    std::string routing_key_;
+    AMQP::Table& bind_arguments_;
+
+    RabbitPool::ResourcePtr channel_;
+};
+
+class Queue
+{
+public:
+    Queue(const std::string& name);
+
+    Queue& flags(int f);
+    Queue& arguments( AMQP::Table& arguments);
+
+    Queue& bind( const std::string& exchange, const std::string& routing_key, AMQP::Table& arguments);
+    Queue& bind( const std::string& exchange, const std::string& routing_key);
+
+    repro::Future<> create (RabbitPool& rabbit);
+
+private:
+    std::string name_;
+    int flags_;
+    AMQP::Table& arguments_;
+
+    std::string exchange_;
+    std::string routing_key_;
+    AMQP::Table& bind_arguments_;     
+};
+
 
 
 } // end namespace

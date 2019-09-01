@@ -33,4 +33,5 @@ ADD . /usr/local/src/repro-rabbit
 
 
 #CMD bash -c 'sleep 6000'
-CMD sleep 1 && amqp-declare-queue -u=amqp://rabbit -q test && /usr/local/bin/build.sh repro-rabbit
+# CMD sleep 1 && amqp-declare-queue -u=amqp://rabbit -q test && /usr/local/bin/build.sh repro-rabbit
+CMD sleep 1 && /usr/local/bin/build.sh repro-rabbit

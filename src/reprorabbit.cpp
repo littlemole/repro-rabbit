@@ -191,6 +191,26 @@ Future<> RabbitTransaction::commit()
     return p.future();      
 }
 
+Future<> RabbitTransaction::rollback()
+{
+    auto p = promise();
+
+    RabbitPool::ResourcePtr r = rabbit_;
+
+    (*r)->channel->rollbackTransaction()
+    .onSuccess( [p,r]() 
+    {
+        p.resolve();
+    })
+    .onError([p,r](const char *message) 
+    {
+        r->markAsInvalid();
+        p.reject(repro::Ex(message));
+    });      
+
+    return p.future();      
+}
+
 
 ////////////////////////////////////////////////////////////////////
 
@@ -261,6 +281,168 @@ Future<RabbitMsg> RabbitListener::subscribe(std::string queue)
     return p_.future();
 }
 
+
+static AMQP::Table defaultTable;
+
+Exchange::Exchange(const std::string& name)
+    : name_(name), type_(AMQP::direct), flags_(0), arguments_(defaultTable), bind_arguments_(defaultTable)
+{}
+    
+Exchange& Exchange::type(AMQP::ExchangeType& t)
+{
+    type_ = t;
+    return *this;
+}
+            
+Exchange& Exchange::flags(int f)
+{
+    flags_ = f;
+    return *this;
+}
+            
+Exchange& Exchange::arguments(AMQP::Table& arguments)
+{
+    arguments_ = arguments;
+    return *this;
+}
+
+Exchange& Exchange::bind( const std::string& exchange, const std::string& routing_key, AMQP::Table& arguments)
+{
+    exchange_ = exchange;
+    routing_key_ = routing_key;
+    bind_arguments_ = arguments;
+    return *this;
+}
+
+Exchange& Exchange::bind( const std::string& exchange, const std::string& routing_key)
+{
+    return bind(exchange,routing_key,defaultTable);
+}
+
+repro::Future<> Exchange::create (RabbitPool& rabbit)
+{
+    auto p = repro::promise();
+
+    std::string name = name_;
+    AMQP::ExchangeType type = type_;
+    int flags = flags_;
+    AMQP::Table arguments = arguments_;
+
+    std::string exchange = exchange_;
+    std::string routing_key = routing_key_;
+    AMQP::Table bind_arguments = bind_arguments_;
+
+    rabbit.get()
+    .then( [p,name,type,flags,arguments,exchange,routing_key,bind_arguments](RabbitPool::ResourcePtr channel)
+    {    
+        (*channel)->channel->declareExchange(name,type,flags,arguments)
+        .onSuccess([p,channel,name,exchange,routing_key,bind_arguments]() 
+        {
+            if(!exchange.empty())
+            {
+                (*channel)->channel->bindExchange(exchange,name,routing_key,bind_arguments)
+                .onSuccess([p]() 
+                {
+                    p.resolve();
+                })
+                .onError([channel,p](const char *message) 
+                {
+                    channel->markAsInvalid();
+                    p.reject(repro::Ex(message));
+                }); 
+            }
+            else
+            {
+                p.resolve();
+            }
+        })
+        .onError([channel,p](const char *message) 
+        {
+            channel->markAsInvalid();
+            p.reject(repro::Ex(message));
+        });   
+    })
+    .otherwise(reject(p));
+
+    return p.future();
+}
+
+
+Queue::Queue(const std::string& name)
+    : name_(name), flags_(0), arguments_(defaultTable),bind_arguments_(defaultTable)
+{}
+
+Queue& Queue::flags(int f)
+{
+    flags_ = f;
+    return *this;
+}
+
+Queue& Queue::arguments( AMQP::Table& arguments)
+{
+    arguments_ = arguments;
+    return *this;
+}
+
+Queue& Queue::bind( const std::string& exchange, const std::string& routing_key, AMQP::Table& arguments)
+{
+    exchange_ = exchange;
+    routing_key_ = routing_key;
+    bind_arguments_ = arguments;
+    return *this;
+}
+
+Queue& Queue::bind( const std::string& exchange, const std::string& routing_key)
+{
+    return bind(exchange,routing_key,defaultTable);
+}
+
+repro::Future<> Queue::create (RabbitPool& rabbit)
+{
+    auto p = repro::promise();
+
+    std::string name = name_;
+    int flags = flags_;
+    AMQP::Table arguments = arguments_;
+
+    std::string exchange = exchange_;
+    std::string routing_key = routing_key_;
+    AMQP::Table bind_arguments = bind_arguments_;
+
+    rabbit.get()
+    .then( [p,name,flags,arguments,exchange, routing_key, bind_arguments](RabbitPool::ResourcePtr channel)
+    {
+        (*channel)->channel->declareQueue(name,flags,arguments)
+        .onSuccess([p,channel,name,exchange, routing_key, bind_arguments](const std::string &name, uint32_t messagecount, uint32_t consumercount) 
+        {
+            if(!exchange.empty())
+            {
+                (*channel)->channel->bindQueue(exchange,name,routing_key,bind_arguments)
+                .onSuccess([p]() 
+                {
+                    p.resolve();
+                })
+                .onError([channel,p](const char *message) 
+                {
+                    channel->markAsInvalid();
+                    p.reject(repro::Ex(message));
+                }); 
+            }
+            else
+            {
+                p.resolve();
+            }
+        })
+        .onError([channel,p](const char *message) 
+        {
+            channel->markAsInvalid();
+            p.reject(repro::Ex(message));
+        });   
+    })
+    .otherwise(reject(p));
+
+    return p.future();
+}
 
 
 }
