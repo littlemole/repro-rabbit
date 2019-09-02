@@ -139,13 +139,15 @@ class Exchange
 {
 public:
 
+    ~Exchange();
+
     Exchange(const std::string& name);
         
-    Exchange& type( AMQP::ExchangeType& type);
+    Exchange& type( const AMQP::ExchangeType& type);
     Exchange& flags(int type);                
-    Exchange& arguments( AMQP::Table& arguments);
+    Exchange& arguments( const AMQP::Table& arguments);
 
-    Exchange& bind( const std::string& exchange, const std::string& routing_key, AMQP::Table& arguments);
+    Exchange& bind( const std::string& exchange, const std::string& routing_key, const AMQP::Table& arguments);
     Exchange& bind( const std::string& exchange, const std::string& routing_key);
 
     repro::Future<> create (RabbitPool& rabbit);
@@ -153,13 +155,13 @@ public:
 
 private:
     std::string name_;
-    AMQP::ExchangeType type_;
+    std::unique_ptr<AMQP::ExchangeType> type_;
     int flags_;
-    AMQP::Table& arguments_;
+    std::unique_ptr<AMQP::Table> arguments_;
 
     std::string exchange_;
     std::string routing_key_;
-    AMQP::Table& bind_arguments_;
+    std::unique_ptr<AMQP::Table> bind_arguments_;
 
     RabbitPool::ResourcePtr channel_;
 };
@@ -174,12 +176,14 @@ struct QueueStatus
 class Queue
 {
 public:
+    Queue();
     Queue(const std::string& name);
+    ~Queue();
 
     Queue& flags(int f);
-    Queue& arguments( AMQP::Table& arguments);
+    Queue& arguments( const AMQP::Table& arguments);
 
-    Queue& bind( const std::string& exchange, const std::string& routing_key, AMQP::Table& arguments);
+    Queue& bind( const std::string& exchange, const std::string& routing_key, const AMQP::Table& arguments);
     Queue& bind( const std::string& exchange, const std::string& routing_key);
 
     repro::Future<QueueStatus> create (RabbitPool& rabbit);
@@ -187,11 +191,11 @@ public:
 private:
     std::string name_;
     int flags_;
-    AMQP::Table& arguments_;
+    std::unique_ptr<AMQP::Table> arguments_;
 
     std::string exchange_;
     std::string routing_key_;
-    AMQP::Table& bind_arguments_;     
+    std::unique_ptr<AMQP::Table> bind_arguments_;     
 };
 
 

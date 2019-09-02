@@ -282,15 +282,17 @@ Future<RabbitMsg> RabbitListener::subscribe(std::string queue)
 }
 
 
-static AMQP::Table defaultTable;
+//static AMQP::Table defaultTable;
+Exchange::~Exchange()
+{}
 
 Exchange::Exchange(const std::string& name)
-    : name_(name), type_(AMQP::direct), flags_(0), arguments_(defaultTable), bind_arguments_(defaultTable)
+    : name_(name), type_(new AMQP::ExchangeType(AMQP::direct)), flags_(0), arguments_(new AMQP::Table()), bind_arguments_(new AMQP::Table())
 {}
     
-Exchange& Exchange::type(AMQP::ExchangeType& t)
+Exchange& Exchange::type(const AMQP::ExchangeType& t)
 {
-    type_ = t;
+    type_.reset(new AMQP::ExchangeType(t));
     return *this;
 }
             
@@ -300,22 +302,23 @@ Exchange& Exchange::flags(int f)
     return *this;
 }
             
-Exchange& Exchange::arguments(AMQP::Table& arguments)
+Exchange& Exchange::arguments(const AMQP::Table& arguments)
 {
-    arguments_ = arguments;
+    arguments_.reset(new AMQP::Table(arguments));
     return *this;
 }
 
-Exchange& Exchange::bind( const std::string& exchange, const std::string& routing_key, AMQP::Table& arguments)
+Exchange& Exchange::bind( const std::string& exchange, const std::string& routing_key, const AMQP::Table& arguments)
 {
     exchange_ = exchange;
     routing_key_ = routing_key;
-    bind_arguments_ = arguments;
+    bind_arguments_.reset(new AMQP::Table(arguments));
     return *this;
 }
 
 Exchange& Exchange::bind( const std::string& exchange, const std::string& routing_key)
 {
+    AMQP::Table defaultTable;
     return bind(exchange,routing_key,defaultTable);
 }
 
@@ -324,13 +327,13 @@ repro::Future<> Exchange::create (RabbitPool& rabbit)
     auto p = repro::promise();
 
     std::string name = name_;
-    AMQP::ExchangeType type = type_;
+    AMQP::ExchangeType type = *type_;
     int flags = flags_;
-    AMQP::Table arguments = arguments_;
+    AMQP::Table arguments = *arguments_;
 
     std::string exchange = exchange_;
     std::string routing_key = routing_key_;
-    AMQP::Table bind_arguments = bind_arguments_;
+    AMQP::Table bind_arguments = *bind_arguments_;
 
     rabbit.get()
     .then( [p,name,type,flags,arguments,exchange,routing_key,bind_arguments](RabbitPool::ResourcePtr channel)
@@ -367,9 +370,18 @@ repro::Future<> Exchange::create (RabbitPool& rabbit)
     return p.future();
 }
 
+Queue::~Queue()
+{
+
+}
+
+Queue::Queue()
+    : name_(""), flags_(0), arguments_(new AMQP::Table()),bind_arguments_(new AMQP::Table())
+{}
+
 
 Queue::Queue(const std::string& name)
-    : name_(name), flags_(0), arguments_(defaultTable),bind_arguments_(defaultTable)
+    : name_(name), flags_(0), arguments_(new AMQP::Table()),bind_arguments_(new AMQP::Table())
 {}
 
 Queue& Queue::flags(int f)
@@ -378,22 +390,23 @@ Queue& Queue::flags(int f)
     return *this;
 }
 
-Queue& Queue::arguments( AMQP::Table& arguments)
+Queue& Queue::arguments( const AMQP::Table& arguments)
 {
-    arguments_ = arguments;
+    arguments_.reset(new AMQP::Table(arguments));
     return *this;
 }
 
-Queue& Queue::bind( const std::string& exchange, const std::string& routing_key, AMQP::Table& arguments)
+Queue& Queue::bind( const std::string& exchange, const std::string& routing_key, const AMQP::Table& arguments)
 {
     exchange_ = exchange;
     routing_key_ = routing_key;
-    bind_arguments_ = arguments;
+    bind_arguments_.reset(new AMQP::Table(arguments));
     return *this;
 }
 
 Queue& Queue::bind( const std::string& exchange, const std::string& routing_key)
 {
+    AMQP::Table defaultTable;
     return bind(exchange,routing_key,defaultTable);
 }
 
@@ -403,11 +416,11 @@ repro::Future<QueueStatus> Queue::create (RabbitPool& rabbit)
 
     std::string name = name_;
     int flags = flags_;
-    AMQP::Table arguments = arguments_;
+    AMQP::Table arguments = *arguments_;
 
     std::string exchange = exchange_;
     std::string routing_key = routing_key_;
-    AMQP::Table bind_arguments = bind_arguments_;
+    AMQP::Table bind_arguments = *bind_arguments_;
 
     rabbit.get()
     .then( [p,name,flags,arguments,exchange, routing_key, bind_arguments](RabbitPool::ResourcePtr channel)

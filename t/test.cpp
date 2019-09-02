@@ -3,6 +3,8 @@
 #include "reprorabbit/rabbit.h"
 #include <iostream>
 
+#include <amqpcpp/flags.h>
+
 using namespace reprorabbit;
 using namespace repro;
 using namespace prio;
@@ -53,16 +55,13 @@ TEST_F(BasicTest, SimpleRabbit)
 
     nextTick([&pool,&listener]()
     {
-      Exchange exchange("test-exchange");
-
-      exchange
+      Exchange("test-exchange")
       .bind("","test-key")
       .create(*pool)
       .then([&pool]()
-      {
-        Queue queue("test");
-        
-        return queue
+      {        
+        return Queue("test")
+        .flags(AMQP::autodelete)
         .bind("test-exchange","test-key")
         .create(*pool);
       })
@@ -160,19 +159,14 @@ TEST_F(BasicTest, SimpleRabbitFan)
 
     nextTick([&pool,&listener1,&listener2]()
     {
-      Exchange exchange("fan-exchange");
-
-      AMQP::ExchangeType et = AMQP::fanout;
-
-      exchange
-      .type(et)
+      Exchange("fan-exchange")
+      .type(AMQP::fanout)
       .bind("","fan-key")
       .create(*pool)
       .then([&pool]()
       {
-        Queue queue("");
-        
-        return queue
+        return Queue()
+        .flags(AMQP::autodelete)
         .bind("fan-exchange","fan-key")
         .create(*pool);
       })
@@ -196,9 +190,8 @@ TEST_F(BasicTest, SimpleRabbitFan)
               }
         });
 
-        Queue queue("");
-        
-        return queue
+        return Queue()
+        .flags(AMQP::autodelete)
         .bind("fan-exchange","fan-key")
         .create(*pool);
       })
@@ -241,9 +234,7 @@ TEST_F(BasicTest, SimpleRabbitFan)
 
 repro::Future<> coro_test(std::shared_ptr<RabbitPool> pool, RabbitListener& listener)
 {
-    Queue queue("test");
-
-    QueueStatus qs = co_await queue.create(*pool);
+    QueueStatus qs = co_await Queue("test").flags(AMQP::autodelete).create(*pool);
 
     listener.subscribe("test")
     .then([](RabbitMsg msg )
