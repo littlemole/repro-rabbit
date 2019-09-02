@@ -164,6 +164,13 @@ private:
     RabbitPool::ResourcePtr channel_;
 };
 
+struct QueueStatus
+{
+    std::string name;
+    uint32_t messagecount;
+    uint32_t consumercount;
+};
+
 class Queue
 {
 public:
@@ -175,7 +182,7 @@ public:
     Queue& bind( const std::string& exchange, const std::string& routing_key, AMQP::Table& arguments);
     Queue& bind( const std::string& exchange, const std::string& routing_key);
 
-    repro::Future<> create (RabbitPool& rabbit);
+    repro::Future<QueueStatus> create (RabbitPool& rabbit);
 
 private:
     std::string name_;

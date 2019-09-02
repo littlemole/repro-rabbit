@@ -397,9 +397,9 @@ Queue& Queue::bind( const std::string& exchange, const std::string& routing_key)
     return bind(exchange,routing_key,defaultTable);
 }
 
-repro::Future<> Queue::create (RabbitPool& rabbit)
+repro::Future<QueueStatus> Queue::create (RabbitPool& rabbit)
 {
-    auto p = repro::promise();
+    auto p = repro::promise<QueueStatus>();
 
     std::string name = name_;
     int flags = flags_;
@@ -413,14 +413,15 @@ repro::Future<> Queue::create (RabbitPool& rabbit)
     .then( [p,name,flags,arguments,exchange, routing_key, bind_arguments](RabbitPool::ResourcePtr channel)
     {
         (*channel)->channel->declareQueue(name,flags,arguments)
-        .onSuccess([p,channel,name,exchange, routing_key, bind_arguments](const std::string &name, uint32_t messagecount, uint32_t consumercount) 
+        .onSuccess([p,channel,name,exchange, routing_key, bind_arguments](const std::string &queuename, uint32_t messagecount, uint32_t consumercount) 
         {
+            QueueStatus qs {queuename,messagecount,consumercount};
             if(!exchange.empty())
             {
                 (*channel)->channel->bindQueue(exchange,name,routing_key,bind_arguments)
-                .onSuccess([p]() 
+                .onSuccess([p,qs]() 
                 {
-                    p.resolve();
+                    p.resolve(qs);
                 })
                 .onError([channel,p](const char *message) 
                 {
@@ -430,7 +431,7 @@ repro::Future<> Queue::create (RabbitPool& rabbit)
             }
             else
             {
-                p.resolve();
+                p.resolve(qs);
             }
         })
         .onError([channel,p](const char *message) 
