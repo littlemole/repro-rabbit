@@ -105,16 +105,19 @@ class RabbitMsg
 {
 public:
 
-  RabbitPool::ResourcePtr rabbit;
+    RabbitPool::ResourcePtr rabbit;
 
-  const AMQP::Message &message;
-  uint64_t deliveryTag;
-  bool redelivered;
+    const AMQP::Message &message;
+    uint64_t deliveryTag;
+    bool redelivered;
 
-  void ack();
-  void reject();
+    void ack();
+    void reject();
 
-  std::string body();
+    std::string body();
+
+    const std::string &exchange() const;
+    const std::string &routingkey() const;
 };
 
 

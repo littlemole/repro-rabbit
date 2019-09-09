@@ -21,8 +21,8 @@ class RabbitChannel
 {
 public:
 
-  std::shared_ptr<AMQP::TcpConnection> con;
-  std::shared_ptr<AMQP::TcpChannel> channel;
+    std::shared_ptr<AMQP::TcpConnection> con;
+    std::shared_ptr<AMQP::TcpChannel> channel;
 
 };
 
@@ -31,15 +31,15 @@ public:
 #ifdef PROMISE_USE_LIBEVENT    
 AMQP::LibEventHandler* RabbitLocator::handler()
 {
-  static AMQP::LibEventHandler theHandler(eventLoop().base());
-  return &theHandler;
+    static AMQP::LibEventHandler theHandler(eventLoop().base());
+    return &theHandler;
 }
 #endif
 #ifdef PROMISE_USE_BOOST_ASIO
 AMQP::LibBoostAsioHandler* RabbitLocator::handler()
 {
-  static AMQP::LibBoostAsioHandler theHandler(asioLoop().io());
-  return &theHandler;
+    static AMQP::LibBoostAsioHandler theHandler(asioLoop().io());
+    return &theHandler;
 }
 #endif
 
@@ -75,11 +75,11 @@ void RabbitLocator::free(RabbitChannel* rc)
 {
     if(rc->channel)
     {
-      rc->channel->close();
+        rc->channel->close();
     }
     if(rc->con)
     {
-      rc->con->close();
+        rc->con->close();
     }
     delete rc;
 }
@@ -104,17 +104,17 @@ repro::Future<> RabbitPool::publish( std::string exchange, std::string key, std:
     get()
     .then([p,exchange,key,msg](RabbitPool::ResourcePtr rabbit)
     {
-    (*rabbit)->channel->startTransaction();
-    (*rabbit)->channel->publish(exchange,key,msg);
+        (*rabbit)->channel->startTransaction();
+        (*rabbit)->channel->publish(exchange,key,msg);
 
-    (*rabbit)->channel->commitTransaction()
-    .onSuccess([p]() {
-        p.resolve();
-    })
-    .onError([rabbit,p](const char *message) {
-        rabbit->markAsInvalid();
-        p.reject(repro::Ex(message));
-    });      
+        (*rabbit)->channel->commitTransaction()
+        .onSuccess([p]() {
+            p.resolve();
+        })
+        .onError([rabbit,p](const char *message) {
+            rabbit->markAsInvalid();
+            p.reject(repro::Ex(message));
+        });      
     });      
 
     return p.future();
@@ -127,7 +127,7 @@ repro::Future<RabbitTransaction> RabbitPool::tx()
     get()
     .then([p](RabbitPool::ResourcePtr rabbit)
     {
-    p.resolve(RabbitTransaction(rabbit));
+        p.resolve(RabbitTransaction(rabbit));
     });      
 
     return p.future();
@@ -231,6 +231,16 @@ std::string RabbitMsg::body()
     return std::string(message.body(),message.bodySize());
 }
 
+const std::string& RabbitMsg::exchange() const
+{
+    return messsage.exchange();
+}
+
+const std::string& RabbitMsg::routingkey() const
+{
+    return message.routingkey();
+} 
+
 ////////////////////////////////////////////////////////////////////
 
 
@@ -252,20 +262,21 @@ Future<RabbitMsg> RabbitListener::subscribe(std::string queue)
             p_.resolve(RabbitMsg{rabbit,message,deliveryTag,redelivered});
         };
 
-        auto startCb = [](const std::string &consumertag) {
-
+        auto startCb = [](const std::string &consumertag) 
+        {
             std::cout << "consume operation started" << std::endl;
         };
 
-        auto errorCb = [this,rabbit,queue](const char *message) {
-
+        auto errorCb = [this,rabbit,queue](const char *message) 
+        {
             rabbit->markAsInvalid();
 
             (*rabbit)->channel->close();
             (*rabbit)->channel.reset();
 
-            timeout([this,queue,rabbit](){
-            subscribe(queue);
+            timeout([this,queue,rabbit]()
+            {
+                subscribe(queue);
             },5,0);
         };
 
@@ -275,7 +286,6 @@ Future<RabbitMsg> RabbitListener::subscribe(std::string queue)
         .onSuccess(startCb);
 
         channel.onError(errorCb);
-
     });
 
     return p_.future();
