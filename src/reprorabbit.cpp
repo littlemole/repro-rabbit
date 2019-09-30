@@ -233,7 +233,7 @@ std::string RabbitMsg::body()
 
 const std::string& RabbitMsg::exchange() const
 {
-    return messsage.exchange();
+    return message.exchange();
 }
 
 const std::string& RabbitMsg::routingkey() const
