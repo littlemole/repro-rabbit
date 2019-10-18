@@ -157,7 +157,7 @@ repro::Future<RabbitPool::ResourcePtr> RabbitPool::get()
 }
 
 ////////////////////////////////////////////////////////////////////
-
+/*
 RabbitTransaction::RabbitTransaction()
 {
 }
@@ -177,7 +177,7 @@ RabbitTransaction::RabbitTransaction(RabbitTransaction&& rhs)
 RabbitTransaction::~RabbitTransaction()
 {
 }
-
+*/
 
 RabbitTransaction::RabbitTransaction(RabbitPool::ResourcePtr rabbit)
 : rabbit_(rabbit)

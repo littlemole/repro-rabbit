@@ -59,12 +59,12 @@ struct RabbitLocator
 class RabbitTransaction
 {
 public:
-
+/*
     RabbitTransaction();
     RabbitTransaction(const RabbitTransaction& rhs);
     RabbitTransaction(RabbitTransaction&& rhs);
     ~RabbitTransaction();
-
+*/
     LITTLE_MOLE_MONITOR(RabbitTransactions);
 
     RabbitTransaction(std::shared_ptr<prio::Resource<RabbitChannel>> rabbit);
@@ -113,7 +113,11 @@ class RabbitMsg
 {
 public:
 
-    //LITTLE_MOLE_MONITOR(RabbitMsgs);
+    LITTLE_MOLE_MONITOR(RabbitMsgs);
+
+    RabbitMsg(RabbitPool::ResourcePtr r, const AMQP::Message &m, uint64_t t, bool re )
+        : rabbit(r), message(m), deliveryTag(t), redelivered(re)
+    {}
 
     RabbitPool::ResourcePtr rabbit;
 
