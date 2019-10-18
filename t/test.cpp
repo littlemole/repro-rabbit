@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include "test.h"
+#include "reprocpp/test.h"
 #include "reprorabbit/rabbit.h"
 #include <iostream>
 
@@ -31,6 +31,7 @@ protected:
     virtual void TearDown() 
     {
         pool.reset();
+        MOL_TEST_ASSERT_CNTS(0,0);
     }
 
     void count_message(RabbitMsg& msg, int& i, int max)
@@ -276,10 +277,15 @@ TEST_F(BasicTest, SimpleRabbitDeadLettering)
             listener1.subscribe(qs.name)
             .then([this](RabbitMsg msg )
             {
+                std::cout << "msg arrived in DL" << std::endl;
                 EXPECT_EQ("msg number one",msg.body());
                 count_message(msg,i,1);
             });
-
+        });
+        
+        nextTick()
+        .then([this]()
+        {
             AMQP::Table arguments;
             arguments["x-dead-letter-exchange"] = "dlx-exchange";
 
@@ -293,6 +299,7 @@ TEST_F(BasicTest, SimpleRabbitDeadLettering)
             listener2.subscribe(qs.name)
             .then([this](RabbitMsg msg )
             {
+                std::cout << "msg arrived in Queue" << std::endl;
                 EXPECT_EQ("msg number one",msg.body());
                 msg.reject();
                 count_message(msg,i,1);

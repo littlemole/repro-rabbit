@@ -158,6 +158,26 @@ repro::Future<RabbitPool::ResourcePtr> RabbitPool::get()
 
 ////////////////////////////////////////////////////////////////////
 
+RabbitTransaction::RabbitTransaction()
+{
+}
+
+RabbitTransaction::RabbitTransaction(const RabbitTransaction& rhs)
+:rabbit_(rhs.rabbit_)
+{
+}
+
+RabbitTransaction::RabbitTransaction(RabbitTransaction&& rhs)
+:rabbit_(rhs.rabbit_)
+{
+    rhs.rabbit_.reset();
+}
+
+   
+RabbitTransaction::~RabbitTransaction()
+{
+}
+
 
 RabbitTransaction::RabbitTransaction(RabbitPool::ResourcePtr rabbit)
 : rabbit_(rabbit)

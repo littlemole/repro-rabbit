@@ -2,6 +2,7 @@
 #define _MOL_DEF_GUARD_DEFINE_REPRORABBIT_DEF_
 
 #include "priocpp/api.h"
+#include "reprocpp/debug.h"
 #include "priocpp/ResourcePool.h"
 #include <amqpcpp/exchangetype.h>
 
@@ -59,6 +60,13 @@ class RabbitTransaction
 {
 public:
 
+    RabbitTransaction();
+    RabbitTransaction(const RabbitTransaction& rhs);
+    RabbitTransaction(RabbitTransaction&& rhs);
+    ~RabbitTransaction();
+
+    LITTLE_MOLE_MONITOR(RabbitTransactions);
+
     RabbitTransaction(std::shared_ptr<prio::Resource<RabbitChannel>> rabbit);
 
     RabbitTransaction& publish( std::string exchange, std::string key, std::string msg);
@@ -105,6 +113,8 @@ class RabbitMsg
 {
 public:
 
+    //LITTLE_MOLE_MONITOR(RabbitMsgs);
+
     RabbitPool::ResourcePtr rabbit;
 
     const AMQP::Message &message;
@@ -126,6 +136,8 @@ public:
 class RabbitListener
 {
 public:
+
+  LITTLE_MOLE_MONITOR(RabbitListeners);
 
   RabbitListener(std::shared_ptr<RabbitPool> pool);
 
